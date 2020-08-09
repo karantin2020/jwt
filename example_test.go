@@ -26,8 +26,8 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 
+	jwt "github.com/karantin2020/jwt"
 	jose "gopkg.in/square/go-jose.v2"
-	jwt "gopkg.in/square/go-jose.v2/jwt"
 )
 
 var sharedKey = []byte("secret")
@@ -41,7 +41,7 @@ func ExampleParseSigned() {
 		panic(err)
 	}
 
-	out := jwt.Claims{}
+	out := jwt.StandardClaims{}
 	if err := tok.Claims(sharedKey, &out); err != nil {
 		panic(err)
 	}
@@ -57,7 +57,7 @@ func ExampleParseEncrypted() {
 		panic(err)
 	}
 
-	out := jwt.Claims{}
+	out := jwt.StandardClaims{}
 	if err := tok.Claims(key, &out); err != nil {
 		panic(err)
 	}
@@ -77,7 +77,7 @@ func ExampleParseSignedAndEncrypted() {
 		panic(err)
 	}
 
-	out := jwt.Claims{}
+	out := jwt.StandardClaims{}
 	if err := nested.Claims(&rsaPrivKey.PublicKey, &out); err != nil {
 		panic(err)
 	}
@@ -87,7 +87,7 @@ func ExampleParseSignedAndEncrypted() {
 }
 
 func ExampleClaims_Validate() {
-	cl := jwt.Claims{
+	cl := jwt.StandardClaims{
 		Subject:   "subject",
 		Issuer:    "issuer",
 		NotBefore: jwt.NewNumericDate(time.Date(2016, 1, 1, 0, 0, 0, 0, time.UTC)),
@@ -114,7 +114,7 @@ func ExampleClaims_Validate_withParse() {
 		panic(err)
 	}
 
-	cl := jwt.Claims{}
+	cl := jwt.StandardClaims{}
 	if err := tok.Claims(sharedKey, &cl); err != nil {
 		panic(err)
 	}
@@ -138,7 +138,7 @@ func ExampleSigned() {
 		panic(err)
 	}
 
-	cl := jwt.Claims{
+	cl := jwt.StandardClaims{
 		Subject:   "subject",
 		Issuer:    "issuer",
 		NotBefore: jwt.NewNumericDate(time.Date(2016, 1, 1, 0, 0, 0, 0, time.UTC)),
@@ -160,7 +160,7 @@ func ExampleSigned_privateClaims() {
 		panic(err)
 	}
 
-	cl := jwt.Claims{
+	cl := jwt.StandardClaims{
 		Subject:   "subject",
 		Issuer:    "issuer",
 		NotBefore: jwt.NewNumericDate(time.Date(2016, 1, 1, 0, 0, 0, 0, time.UTC)),
@@ -195,7 +195,7 @@ func ExampleEncrypted() {
 		panic(err)
 	}
 
-	cl := jwt.Claims{
+	cl := jwt.StandardClaims{
 		Subject: "subject",
 		Issuer:  "issuer",
 	}
@@ -219,7 +219,7 @@ func ExampleSignedAndEncrypted() {
 		panic(err)
 	}
 
-	cl := jwt.Claims{
+	cl := jwt.StandardClaims{
 		Subject: "subject",
 		Issuer:  "issuer",
 	}
@@ -232,7 +232,7 @@ func ExampleSignedAndEncrypted() {
 }
 
 func ExampleSigned_multipleClaims() {
-	c := &jwt.Claims{
+	c := &jwt.StandardClaims{
 		Subject: "subject",
 		Issuer:  "issuer",
 	}
@@ -273,7 +273,7 @@ func ExampleJSONWebToken_Claims_multiple() {
 		panic(err)
 	}
 
-	out := jwt.Claims{}
+	out := jwt.StandardClaims{}
 	out2 := struct {
 		Scopes []string
 	}{}
@@ -289,7 +289,40 @@ func ExampleNewWithClaims() {
 		jwt.StandardClaims
 		Scope []string `json:"scope,omitempty"`
 	}
-
+	key1 := []byte("1234567890123456")
+	key2 := []byte("3214567890123459")
+	cl := TestClaims{
+		Scope: []string{"read:repo", "write:settings"},
+		StandardClaims: jwt.StandardClaims{
+			Subject: "subject",
+			Issuer:  "issuer",
+		},
+	}
+	got, err := jwt.NewWithClaims(cl, &jwt.SignOpt{
+		Algorithm: jose.HS256,
+		Key:       key1,
+	}, &jwt.EncOpt{
+		ContEnc: jose.A128GCM,
+		Rcpt: jose.Recipient{
+			Algorithm: jose.A256GCMKW,
+			Key:       key2,
+		},
+	})
+	if err != nil {
+		panic("NewWithClaims() error = " + err.Error())
+	}
+	fmt.Printf("got: %s\n", got)
+	tok, err := jwt.ParseSignedAndEncrypted(got)
+	if err != nil {
+		panic("NewWithClaims() parse error = " + err.Error())
+	}
+	nested, err := tok.Decrypt(key2)
+	if err != nil {
+		panic(err)
+	}
+	destCl := TestClaims{}
+	nested.Claims(key1, &destCl)
+	fmt.Printf("got: %#v\n", destCl)
 }
 
 func mustUnmarshalRSA(data string) *rsa.PrivateKey {

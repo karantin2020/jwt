@@ -372,10 +372,10 @@ func TestNewWithClaimsSignedAndEncrypted(t *testing.T) {
 			fmt.Printf("tok: %#v\n", *tok)
 			nested, err := tok.Decrypt(key2)
 			if err != nil {
-				panic(err)
+				t.Errorf("NewWithClaims() decrypt error = %v", err)
 			}
 			fmt.Printf("tok: %#v\n", *nested)
-			destCl := MapClaims{}
+			destCl := TestClaims{}
 			nested.Claims(key1, &destCl)
 			fmt.Printf("got: %#v\n", destCl)
 		})
