@@ -20,6 +20,7 @@ package jwt_test
 import (
 	"fmt"
 	"strings"
+	"testing"
 	"time"
 
 	"crypto/rsa"
@@ -286,8 +287,8 @@ func ExampleJSONWebToken_Claims_multiple() {
 
 func ExampleNewWithClaims() {
 	type TestClaims struct {
-		jwt.StandardClaims
 		Scope []string `json:"scope,omitempty"`
+		jwt.StandardClaims
 	}
 	key1 := []byte("1234567890123456")
 	key2 := []byte("3214567890123459")
@@ -299,6 +300,14 @@ func ExampleNewWithClaims() {
 		},
 	}
 	got, err := jwt.NewWithClaims(cl, &jwt.SignOpt{
+		Algorithm: jose.HS256,
+		Key:       key1,
+	})
+	if err != nil {
+		panic("NewWithClaims() error = " + err.Error())
+	}
+	fmt.Printf("got: %s\n", got)
+	got, err = jwt.NewWithClaims(cl, &jwt.SignOpt{
 		Algorithm: jose.HS256,
 		Key:       key1,
 	}, &jwt.EncOpt{
@@ -323,6 +332,13 @@ func ExampleNewWithClaims() {
 	destCl := TestClaims{}
 	nested.Claims(key1, &destCl)
 	fmt.Printf("got: %#v\n", destCl)
+}
+
+func TestExampleOutput(t *testing.T) {
+	if !testing.Verbose() {
+		return
+	}
+	ExampleNewWithClaims()
 }
 
 func mustUnmarshalRSA(data string) *rsa.PrivateKey {
