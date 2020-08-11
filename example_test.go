@@ -285,7 +285,7 @@ func ExampleJSONWebToken_Claims_multiple() {
 	// Output: iss: issuer, sub: subject, scopes: foo,bar
 }
 
-func ExampleNewWithClaims() {
+func ExampleNewWithClaimsSignedAndEncrypted() {
 	type TestClaims struct {
 		Scope []string `json:"scope,omitempty"`
 		jwt.StandardClaims
@@ -302,14 +302,6 @@ func ExampleNewWithClaims() {
 	got, err := jwt.NewWithClaims(cl, &jwt.SignOpt{
 		Algorithm: jose.HS256,
 		Key:       key1,
-	})
-	if err != nil {
-		panic("NewWithClaims() error = " + err.Error())
-	}
-	fmt.Printf("got: %s\n", got)
-	got, err = jwt.NewWithClaims(cl, &jwt.SignOpt{
-		Algorithm: jose.HS256,
-		Key:       key1,
 	}, &jwt.EncOpt{
 		ContEnc: jose.A128GCM,
 		Rcpt: jose.Recipient{
@@ -318,19 +310,55 @@ func ExampleNewWithClaims() {
 		},
 	})
 	if err != nil {
-		panic("NewWithClaims() error = " + err.Error())
+		panic("ExampleNewWithClaimsSignedAndEncrypted() error = " + err.Error())
 	}
 	fmt.Printf("got: %s\n", got)
 	tok, err := jwt.ParseSignedAndEncrypted(got)
 	if err != nil {
-		panic("NewWithClaims() parse error = " + err.Error())
+		panic("ExampleNewWithClaimsSignedAndEncrypted() parse error = " + err.Error())
 	}
 	nested, err := tok.Decrypt(key2)
 	if err != nil {
 		panic(err)
 	}
 	destCl := TestClaims{}
-	nested.Claims(key1, &destCl)
+	err = nested.Claims(key1, &destCl)
+	if err != nil {
+		panic("ExampleNewWithClaimsSignedAndEncrypted() parse error = " + err.Error())
+	}
+	fmt.Printf("got: %#v\n", destCl)
+}
+
+func ExampleNewWithClaimsSigned() {
+	type TestClaims struct {
+		Scope []string `json:"scope,omitempty"`
+		jwt.StandardClaims
+	}
+	key1 := []byte("1234567890123456")
+	cl := TestClaims{
+		Scope: []string{"read:repo", "write:settings"},
+		StandardClaims: jwt.StandardClaims{
+			Subject: "subject",
+			Issuer:  "issuer",
+		},
+	}
+	got, err := jwt.NewWithClaims(cl, &jwt.SignOpt{
+		Algorithm: jose.HS256,
+		Key:       key1,
+	})
+	if err != nil {
+		panic("ExampleNewWithClaimsSigned() error = " + err.Error())
+	}
+	fmt.Printf("got: %s\n", got)
+	tok, err := jwt.ParseSigned(got)
+	if err != nil {
+		panic("ExampleNewWithClaimsSigned() parse error = " + err.Error())
+	}
+	destCl := TestClaims{}
+	err = tok.Claims(key1, &destCl)
+	if err != nil {
+		panic("ExampleNewWithClaimsSigned() parse error = " + err.Error())
+	}
 	fmt.Printf("got: %#v\n", destCl)
 }
 
@@ -338,7 +366,8 @@ func TestExampleOutput(t *testing.T) {
 	if !testing.Verbose() {
 		return
 	}
-	ExampleNewWithClaims()
+	ExampleNewWithClaimsSignedAndEncrypted()
+	ExampleNewWithClaimsSigned()
 }
 
 func mustUnmarshalRSA(data string) *rsa.PrivateKey {
