@@ -1,7 +1,7 @@
 # jwt package
 
 ### Golang implementation of JSON Web Tokens (JWT) 
-[![GoDoc](https://godoc.org/github.com/karantin2020/jwt?status.svg)](https://godoc.org/github.com/karantin2020/jwt)
+[![GoDoc](https://godoc.org/github.com/karantin2020/jwt?status.svg)](https://godoc.org/github.com/karantin2020/jwt) [![PkgGoDev](https://pkg.go.dev/badge/github.com/karantin2020/jwt)](https://pkg.go.dev/github.com/karantin2020/jwt)
 
 This library is based on `github.com/square/go-jose` package and it's jwt subpackage (version 2 currently)  
 
