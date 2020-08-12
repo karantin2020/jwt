@@ -285,7 +285,7 @@ func ExampleJSONWebToken_Claims_multiple() {
 	// Output: iss: issuer, sub: subject, scopes: foo,bar
 }
 
-func ExampleNewWithClaimsSignedAndEncrypted() {
+func ExampleNewWithClaims_signedAndEncrypted() {
 	type TestClaims struct {
 		Scope []string `json:"scope,omitempty"`
 		jwt.StandardClaims
@@ -329,17 +329,23 @@ func ExampleNewWithClaimsSignedAndEncrypted() {
 	fmt.Printf("got: %#v\n", destCl)
 }
 
-func ExampleNewWithClaimsSigned() {
+func ExampleNewWithClaims_signed() {
 	type TestClaims struct {
 		Scope []string `json:"scope,omitempty"`
 		jwt.StandardClaims
 	}
 	key1 := []byte("1234567890123456")
+	now := jwt.NewNumericDate(time.Now())
+	after := jwt.NewNumericDate(now.Time().Add(time.Hour * 1))
 	cl := TestClaims{
 		Scope: []string{"read:repo", "write:settings"},
 		StandardClaims: jwt.StandardClaims{
-			Subject: "subject",
-			Issuer:  "issuer",
+			Subject:  "subject",
+			Issuer:   "issuer",
+			ID:       "unknown_id_for_test",
+			Audience: jwt.Audience{"one", "two"},
+			IssuedAt: now,
+			Expiry:   after,
 		},
 	}
 	got, err := jwt.NewWithClaims(cl, &jwt.SignOpt{
@@ -360,14 +366,28 @@ func ExampleNewWithClaimsSigned() {
 		panic("ExampleNewWithClaimsSigned() parse error = " + err.Error())
 	}
 	fmt.Printf("got: %#v\n", destCl)
+	expected := jwt.Expected{}.WithTime(now.Time())
+	jwt.ServerLeeway()
+	err = destCl.Validate(expected)
+	if err != nil {
+		panic("ExampleNewWithClaimsSigned() parse error = " + err.Error())
+	}
+	fmt.Printf("server validation: ok\n")
+	expected = jwt.Expected{}.WithTime(after.Time().Add(time.Minute * -1))
+	jwt.ClientLeeway()
+	err = destCl.Validate(expected)
+	if err != nil {
+		panic("ExampleNewWithClaimsSigned() parse error = " + err.Error())
+	}
+	fmt.Printf("client validation: ok\n")
 }
 
 func TestExampleOutput(t *testing.T) {
 	if !testing.Verbose() {
 		return
 	}
-	ExampleNewWithClaimsSignedAndEncrypted()
-	ExampleNewWithClaimsSigned()
+	ExampleNewWithClaims_signedAndEncrypted()
+	ExampleNewWithClaims_signed()
 }
 
 func mustUnmarshalRSA(data string) *rsa.PrivateKey {

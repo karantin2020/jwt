@@ -71,7 +71,7 @@ func TestExpiryAndNotBefore(t *testing.T) {
 
 	// expired - default leeway (1 minute)
 	assert.NoError(t, c.Validate(Expected{Time: now}))
-	err := c.Validate(Expected{Time: now.Add(2 * DefaultLeeway)})
+	err := c.Validate(Expected{Time: now.Add(2 * defaultLeeway)})
 	if assert.Error(t, err) {
 		assert.Equal(t, err, ErrExpired)
 	}
@@ -85,7 +85,7 @@ func TestExpiryAndNotBefore(t *testing.T) {
 
 	// not before - default leeway (1 minute)
 	assert.NoError(t, c.Validate(Expected{Time: twelveHoursAgo}))
-	err = c.Validate(Expected{Time: twelveHoursAgo.Add(-2 * DefaultLeeway)})
+	err = c.Validate(Expected{Time: twelveHoursAgo.Add(-2 * defaultLeeway)})
 	if assert.Error(t, err) {
 		assert.Equal(t, err, ErrNotValidYet)
 	}
@@ -104,20 +104,20 @@ func TestIssuedInFuture(t *testing.T) {
 
 	// defaults: valid right now, or in the future
 	assert.NoError(t, c.Validate(Expected{Time: now}))
-	assert.NoError(t, c.Validate(Expected{Time: now.Add(2 * DefaultLeeway)}))
+	assert.NoError(t, c.Validate(Expected{Time: now.Add(2 * defaultLeeway)}))
 
 	// cannot be issued in the future
-	err := c.Validate(Expected{Time: now.Add(-2 * DefaultLeeway)})
+	err := c.Validate(Expected{Time: now.Add(-2 * defaultLeeway)})
 	if assert.Error(t, err) {
 		assert.Equal(t, err, ErrIssuedInTheFuture)
 	}
-	err = c.Validate(Expected{Time: now.Add(-DefaultLeeway - 1)})
+	err = c.Validate(Expected{Time: now.Add(-defaultLeeway - 1)})
 	if assert.Error(t, err) {
 		assert.Equal(t, err, ErrIssuedInTheFuture)
 	}
 
 	// valid when we are within the default leeway
-	assert.NoError(t, c.Validate(Expected{Time: now.Add(-DefaultLeeway)}))
+	assert.NoError(t, c.Validate(Expected{Time: now.Add(-defaultLeeway)}))
 
 	// no leeway: valid up to the exact time; expired if issued one ns in the future
 	assert.NoError(t, c.ValidateWithLeeway(Expected{Time: now}, 0))

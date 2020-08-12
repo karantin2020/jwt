@@ -39,8 +39,19 @@ type NestedJSONWebToken struct {
 	Headers []jose.Header
 }
 
+// ErrNoneAlgorithm describes error if jwt has alg==none
+var ErrNoneAlgorithm = errors.New("None algorithm is used in jwt header")
+
 // Claims deserializes a JSONWebToken into dest using the provided key.
 func (t *JSONWebToken) Claims(key interface{}, dest ...interface{}) error {
+	for _, header := range t.Headers {
+		switch {
+		case header.Algorithm == "None":
+		case header.Algorithm == "none":
+			return ErrNoneAlgorithm
+		}
+	}
+
 	payloadKey := tryJWKS(t.Headers, key)
 
 	b, err := t.payload(payloadKey)

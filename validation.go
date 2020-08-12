@@ -19,10 +19,24 @@ package jwt
 
 import "time"
 
-const (
-	// DefaultLeeway defines the default leeway for matching NotBefore/Expiry claims.
-	DefaultLeeway = 1.0 * time.Minute
+var (
+	// defaultLeeway defines the default leeway for matching NotBefore/Expiry claims.
+	defaultLeeway = 1.0 * time.Minute
 )
+
+// ServerLeeway set leeway > 0 for server validating
+func ServerLeeway() {
+	if defaultLeeway < 0 {
+		defaultLeeway = defaultLeeway * -1
+	}
+}
+
+// ClientLeeway set leeway < 0 for client validating
+func ClientLeeway() {
+	if defaultLeeway > 0 {
+		defaultLeeway = defaultLeeway * -1
+	}
+}
 
 // Expected defines values used for protected claims validation.
 // If field has zero value then validation is skipped.
@@ -56,7 +70,7 @@ func (e Expected) WithTime(t time.Time) Expected {
 // otherwise this function might make you think a token is valid when
 // it is not.
 func (c StandardClaims) Validate(e Expected) error {
-	return c.ValidateWithLeeway(e, DefaultLeeway)
+	return c.ValidateWithLeeway(e, defaultLeeway)
 }
 
 // Validate checks claims in a token against expected values
